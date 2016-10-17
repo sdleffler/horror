@@ -81,14 +81,22 @@ HP_MALLOC_ELEM.
 #endif
 
 
-#if HP_SCOPE == HR_SCOPE_STATIC
+#if HP_SCOPE == HR_SCOPE_NONE
+    #define HP_FUNC
+#elif HP_SCOPE == HR_SCOPE_STATIC
     #define HP_FUNC static
 #elif HP_SCOPE == HR_SCOPE_STATIC_INLINE
     #define HP_FUNC static inline
 #elif HP_SCOPE == HR_SCOPE_EXTERN_INLINE
     #define HP_FUNC extern inline
 #else
-    #define HP_FUNC
+    #error Error: Generic binary heap requires HP_SCOPE to be defined.
+    #define HP_FUNC // For testing purposes.
+#endif
+
+#if !defined(HP_STORAGE)
+    #error Error: Generic binary heap requires HP_STORAGE to be defined.
+    #define HP_STORAGE HR_STORAGE_DIRECT // For testing purposes.
 #endif
 
 #define NAME_(n) HR_CONCAT(HP_NAME, n)

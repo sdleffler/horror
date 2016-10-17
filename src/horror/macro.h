@@ -34,15 +34,16 @@ SOFTWARE.
 #define HR_PARENTHESIZED(...) __VA_ARGS__
 
 
-#define HR_SCOPE_HEADER        1
-#define HR_SCOPE_STATIC        2
-#define HR_SCOPE_STATIC_INLINE 3
-#define HR_SCOPE_EXTERN_INLINE 4
+#define HR_SCOPE_NONE          1
+#define HR_SCOPE_HEADER        2
+#define HR_SCOPE_STATIC        3
+#define HR_SCOPE_STATIC_INLINE 4
+#define HR_SCOPE_EXTERN_INLINE 5
 
 
-#define HR_STORAGE_DIRECT   0
-#define HR_STORAGE_OWNED_INDIRECT 1
-#define HR_STORAGE_BORROWED_INDIRECT 2
+#define HR_STORAGE_DIRECT            1
+#define HR_STORAGE_OWNED_INDIRECT    2
+#define HR_STORAGE_BORROWED_INDIRECT 3
 
 
 typedef int _horror_macro_h_please_the_gods;

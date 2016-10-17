@@ -30,6 +30,7 @@ SOFTWARE.
 #include "horror/rbtree.h"
 
 #define RB_SCOPE HR_SCOPE_STATIC_INLINE
+#define RB_STORAGE HR_STORAGE_DIRECT
 #define RB_ELEM_TYPE int
 #define RB_NAME rb_int
 #define RB_CMP(x, y) ((x) < (y) ? -1 : ((x) > (y) ? 1 : 0))

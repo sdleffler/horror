@@ -83,14 +83,22 @@ deciding to use this library in the first place. Please define a custom DA_MEMMO
 #endif
 
 
-#if DA_SCOPE == HR_SCOPE_STATIC
+#if DA_SCOPE == HR_SCOPE_NONE
+    #define DA_FUNC
+#elif DA_SCOPE == HR_SCOPE_STATIC
     #define DA_FUNC static
 #elif DA_SCOPE == HR_SCOPE_STATIC_INLINE
     #define DA_FUNC static inline
 #elif DA_SCOPE == HR_SCOPE_EXTERN_INLINE
     #define DA_FUNC extern inline
 #else
-    #define DA_FUNC
+    #error Error: Generic dynamic array requires DA_SCOPE to be defined.
+    #define DA_FUNC // For testing purposes.
+#endif
+
+#if !defined(DA_STORAGE)
+    #error Error: Generic dynamic array requires DA_STORAGE to be defined.
+    #define DA_STORAGE HR_STORAGE_DIRECT // For testing purposes.
 #endif
 
 #define NAME_(n) HR_CONCAT(DA_NAME, n)

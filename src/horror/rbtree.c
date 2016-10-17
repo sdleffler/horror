@@ -106,14 +106,22 @@ RB_MALLOC_NODE.
     #define RB_TRAV_NAME HR_CONCAT(RB_NAME, _trav)
 #endif
 
-#if RB_SCOPE == HR_SCOPE_STATIC
+#if RB_SCOPE == HR_SCOPE_NONE
+    #define RB_FUNC
+#elif RB_SCOPE == HR_SCOPE_STATIC
     #define RB_FUNC static
 #elif RB_SCOPE == HR_SCOPE_STATIC_INLINE
     #define RB_FUNC static inline
 #elif RB_SCOPE == HR_SCOPE_EXTERN_INLINE
     #define RB_FUNC extern inline
 #else
-    #define RB_FUNC
+    #error Error: Generic red-black tree requires RB_SCOPE to be defined.
+    #define RB_FUNC // For testing purposes.
+#endif
+
+#if !defined(RB_STORAGE)
+    #error Error: Generic red-black tree requires RB_STORAGE to be defined.
+    #define RB_STORAGE HR_STORAGE_DIRECT // For testing purposes.
 #endif
 
 #define NAME_(n) HR_CONCAT(RB_NAME, n)

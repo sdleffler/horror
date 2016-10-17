@@ -33,6 +33,7 @@ SOFTWARE.
 #include "horror/macro.h"
 
 #define DA_SCOPE HR_SCOPE_STATIC_INLINE
+#define DA_STORAGE HR_STORAGE_DIRECT
 #define DA_ELEM_TYPE int
 #define DA_NAME da_int
 #define DA_DEBUG

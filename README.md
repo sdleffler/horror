@@ -40,7 +40,7 @@ All `#define`'d symbols are automatically `#undef`'d. The options available for 
 - `RB_FREE_NODE` - see `RB_MALLOC_NODE`.
 - `RB_TRAV` - the identifier used for the traversal iterator. If set, the new iterator struct will be named `<RB_TRAV>_t`.
 - `RB_SCOPE` - the scope to generate the functions in:
-    - `#undef RB_SCOPE` - no special scope. (TODO: Make this an error instead.)
+    - `RB_SCOPE=HR_SCOPE_NONE` - no special scope.
     - `RB_SCOPE=HR_SCOPE_STATIC` - functions are declared as `static`.
     - `RB_SCOPE=HR_SCOPE_STATIC_INLINE` - functions are declared as `static inline`.
     - `RB_SCOPE=HR_SCOPE_HEADER` - only prototypes are declared.

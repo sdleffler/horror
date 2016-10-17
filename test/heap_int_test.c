@@ -33,6 +33,7 @@ SOFTWARE.
 #include "horror/macro.h"
 
 #define HP_SCOPE HR_SCOPE_STATIC_INLINE
+#define HP_STORAGE HR_STORAGE_DIRECT
 #define HP_ELEM_TYPE int
 #define HP_NAME hp_int
 #define HP_CMP(x, y) ((x) < (y) ? true : false)
