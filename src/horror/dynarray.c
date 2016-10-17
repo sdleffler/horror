@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -40,9 +40,8 @@ SOFTWARE.
 #endif
 
 #if !defined(DA_NAME)
-    #error Error: Generic dynamic array requires DA_NAME to be defined. It \
-can not use the type, since it might be a pointer.
-    #define DA_NAME char // For purposes of testing.
+    #error Error: Generic dynamic array requires DA_NAME to be defined.
+    #define DA_NAME da_char // For purposes of testing.
 #endif
 
 #if DA_STORAGE == HR_STORAGE_OWNED_INDIRECT && (!defined(DA_MALLOC_ELEM) || !defined(DA_FREE_ELEM))
@@ -80,7 +79,7 @@ deciding to use this library in the first place. Please define a custom DA_MEMMO
 #endif
 
 #if !defined(DA_TYPE)
-    #define DA_TYPE HR_CONCAT(HR_CONCAT(da_, DA_NAME), _t)
+    #define DA_TYPE HR_CONCAT(DA_NAME, _t)
 #endif
 
 
@@ -94,7 +93,7 @@ deciding to use this library in the first place. Please define a custom DA_MEMMO
     #define DA_FUNC
 #endif
 
-#define NAME_(n) HR_CONCAT(HR_CONCAT(da_, DA_NAME), n)
+#define NAME_(n) HR_CONCAT(DA_NAME, n)
 
 
 typedef struct DA_TYPE DA_TYPE;
@@ -306,7 +305,6 @@ DA_FUNC size_t NAME_(_size)(DA_TYPE* da) {
 
 #undef DA_ELEM_TYPE
 #undef DA_NAME
-#undef DA_CMP
 #undef DA_STORAGE
 #undef DA_MALLOC_ELEM
 #undef DA_FREE_ELEM

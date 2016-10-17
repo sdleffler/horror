@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 

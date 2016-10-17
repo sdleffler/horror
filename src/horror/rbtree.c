@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -44,9 +44,8 @@ Walker's magnificent tutorials and red black tree library.
 #endif
 
 #if !defined(RB_NAME)
-    #error Error: Generic red-black tree requires RB_NAME to be defined. It \
-can not use the type, since it might be a pointer.
-    #define RB_NAME char // For purposes of testing.
+    #error Error: Generic red-black tree requires RB_NAME to be defined.
+    #define RB_NAME rb_char // For purposes of testing.
 #endif
 
 #if !defined(RB_CMP)
@@ -103,14 +102,8 @@ RB_MALLOC_NODE.
     #define RB_FREE_NODE(ptr) (free(ptr))
 #endif
 
-#if !defined(RB_TYPE)
-    #define RB_TYPE HR_CONCAT(HR_CONCAT(rb_, RB_NAME), _t)
-#endif
-
-#define RB_NODE HR_CONCAT(RB_NAME, _node_t)
-
-#if !defined(RB_TRAV)
-    #define RB_TRAV HR_CONCAT(RB_NAME, _trav_t)
+#if !defined(RB_TRAV_NAME)
+    #define RB_TRAV_NAME HR_CONCAT(RB_NAME, _trav)
 #endif
 
 #if RB_SCOPE == HR_SCOPE_STATIC
@@ -123,13 +116,16 @@ RB_MALLOC_NODE.
     #define RB_FUNC
 #endif
 
-#define NAME_(n) HR_CONCAT(HR_CONCAT(rb_, RB_NAME), n)
+#define NAME_(n) HR_CONCAT(RB_NAME, n)
+#define RB_TYPE NAME_(_t)
+#define RB_NODE NAME_(_node_t)
+#define RB_TRAV HR_CONCAT(RB_TRAV_NAME, _t)
 
 #if !defined(RB_TRAV_DEPTH_MAX)
 #define RB_TRAV_DEPTH_MAX 64
 #endif
 
-typedef struct RB_TYPE RB_TYPE;
+typedef struct NAME_(_t) NAME_(_t);
 typedef struct RB_TRAV RB_TRAV;
 
 RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rbdir_t dec);
@@ -173,7 +169,7 @@ typedef struct RB_NODE {
 } RB_NODE;
 
 
-struct RB_TYPE {
+struct NAME_(_t) {
     size_t size;
     RB_NODE* root;
 };
@@ -366,7 +362,7 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
             if (q == NULL) {
                 // If our iterator is null, we have hit the bottom of the tree, and
                 // we may insert a red node.
-                p->link[dir] = q = (RB_NODE*)RB_MALLOC_NODE;
+                p->link[dir] = q = (RB_NODE*)(RB_MALLOC_NODE);
 
                 if (q == NULL) {
                     return false;

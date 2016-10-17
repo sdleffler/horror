@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -42,7 +42,7 @@ SOFTWARE.
 #if !defined(HP_NAME)
     #error Error: Generic binary heap requires HP_NAME to be defined. It \
 can not use the type, since it might be a pointer.
-    #define HP_NAME char // For purposes of testing.
+    #define HP_NAME hp_char // For purposes of testing.
 #endif
 
 #if !defined(HP_CMP)
@@ -77,7 +77,7 @@ HP_MALLOC_ELEM.
 #endif
 
 #if !defined(HP_TYPE)
-    #define HP_TYPE HR_CONCAT(HR_CONCAT(hp_, HP_NAME), _t)
+    #define HP_TYPE HR_CONCAT(HP_NAME, _t)
 #endif
 
 
@@ -91,7 +91,7 @@ HP_MALLOC_ELEM.
     #define HP_FUNC
 #endif
 
-#define NAME_(n) HR_CONCAT(HR_CONCAT(hp_, HP_NAME), n)
+#define NAME_(n) HR_CONCAT(HP_NAME, n)
 
 
 typedef struct HP_TYPE HP_TYPE;

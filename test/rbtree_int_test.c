@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -31,7 +31,7 @@ SOFTWARE.
 
 #define RB_SCOPE HR_SCOPE_STATIC_INLINE
 #define RB_ELEM_TYPE int
-#define RB_NAME int
+#define RB_NAME rb_int
 #define RB_CMP(x, y) ((x) < (y) ? -1 : ((x) > (y) ? 1 : 0))
 #define RB_DEBUG
 #define RB_DEBUG_DUMP(x) do { fprintf(stderr, "Node: %i.\n", x); } while (0)

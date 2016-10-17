@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -34,7 +34,7 @@ SOFTWARE.
 
 #define DA_SCOPE HR_SCOPE_STATIC_INLINE
 #define DA_ELEM_TYPE int
-#define DA_NAME int
+#define DA_NAME da_int
 #define DA_DEBUG
 #define DA_DEBUG_DUMP(x) do { fprintf(stderr, "%i", x); } while (0)
 #include "horror/dynarray.c"

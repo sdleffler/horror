@@ -1,6 +1,6 @@
 /*
 
-The Horror C preprocessor library. Abuse at your own risk.
+The Horror generic C data structure library. Abuse at your own risk.
 
 Copyright (c) 2016 Sean Leffler
 
@@ -34,7 +34,7 @@ SOFTWARE.
 
 #define HP_SCOPE HR_SCOPE_STATIC_INLINE
 #define HP_ELEM_TYPE int
-#define HP_NAME int
+#define HP_NAME hp_int
 #define HP_CMP(x, y) (*(x) < *(y) ? true : false)
 #define HP_STORAGE HR_STORAGE_OWNED_INDIRECT
 #define HP_DEBUG
