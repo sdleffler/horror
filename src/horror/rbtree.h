@@ -30,6 +30,7 @@ Walker's magnificent tutorials and red black tree library.
 #if !defined(HR_RBTREE_H)
 #define HR_RBTREE_H
 
-typedef enum { RB_LEFT = 0, RB_RIGHT = 1 } rbdir_t;
+typedef enum { RB_LEFT = 0, RB_RIGHT = 1 } rb_dir_t;
+typedef enum { RB_BLACK = 0, RB_RED = 1 } rb_color_t;
 
 #endif

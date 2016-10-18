@@ -136,7 +136,7 @@ RB_MALLOC_NODE.
 typedef struct NAME_(_t) NAME_(_t);
 typedef struct RB_TRAV RB_TRAV;
 
-RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rbdir_t dec);
+RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rb_dir_t dec);
 RB_FUNC RB_ELEM_TYPE* NAME_(_next)(RB_TRAV* trav);
 
 RB_FUNC void NAME_(_init)(RB_TYPE* tree);
@@ -178,7 +178,7 @@ RB_FUNC void NAME_(_dump)(RB_TYPE* tree);
 
 
 typedef struct RB_NODE {
-    enum { BLACK = 0, RED = 1 } color;
+    rb_color_t color;
     struct RB_NODE* link[2];
 #if RB_STORAGE != HR_STORAGE_DIRECT
     RB_ELEM_TYPE* data;
@@ -201,7 +201,7 @@ struct RB_TRAV {
 };
 
 
-RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rbdir_t dec) {
+RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rb_dir_t dec) {
     if (tree->root == NULL) {
         trav->depth = -1;
     } else {
@@ -285,7 +285,7 @@ RB_FUNC void NAME_(_cleanup)(RB_TYPE* tree) {
 
 
 RB_FUNC bool NAME_(_is_red)(RB_NODE* node) {
-    return node != NULL && node->color == RED;
+    return node != NULL && node->color == RB_RED;
 }
 
 
@@ -296,7 +296,7 @@ RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE
 #endif
     const RB_NODE* q = tree->root;
 
-    rbdir_t dir;
+    rb_dir_t dir;
     while (q != NULL && RB_CMP((q->data), data) != 0) {
         dir = RB_CMP((q->data), data) < 0;
 
@@ -311,20 +311,20 @@ RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE
 }
 
 
-RB_FUNC RB_NODE* NAME_(_single_rotate)(RB_NODE* root, rbdir_t dir) {
+RB_FUNC RB_NODE* NAME_(_single_rotate)(RB_NODE* root, rb_dir_t dir) {
     RB_NODE* save = root->link[!dir];
 
     root->link[!dir] = save->link[dir];
     save->link[dir] = root;
 
-    root->color = RED;
-    save->color = BLACK;
+    root->color = RB_RED;
+    save->color = RB_BLACK;
 
     return save;
 }
 
 
-RB_FUNC RB_NODE* NAME_(_double_rotate)(RB_NODE* root, rbdir_t dir) {
+RB_FUNC RB_NODE* NAME_(_double_rotate)(RB_NODE* root, rb_dir_t dir) {
     root->link[!dir] = NAME_(_single_rotate)(root->link[!dir], !dir);
 
     return NAME_(_single_rotate)(root, dir);
@@ -344,7 +344,7 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
             return false;
         }
 
-        tree->root->color = BLACK;
+        tree->root->color = RB_BLACK;
         tree->root->link[0] = NULL;
         tree->root->link[1] = NULL;
 
@@ -364,14 +364,14 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
 
         tree->size += 1;
     } else {
-        RB_NODE head = { .color = BLACK };
+        RB_NODE head = { .color = RB_BLACK };
 
         RB_NODE* t; // The great-grandparent of the current node.
         RB_NODE* g; // The grandparent of the current node.
         RB_NODE* p; // The parent of the current node.
         RB_NODE* q; // The current node.
 
-        rbdir_t dir = RB_LEFT, last = RB_LEFT;
+        rb_dir_t dir = RB_LEFT, last = RB_LEFT;
 
         t = &head;
         g = p = NULL;
@@ -387,7 +387,7 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
                     return false;
                 }
 
-                q->color = RED;
+                q->color = RB_RED;
                 q->link[0] = NULL;
                 q->link[1] = NULL;
 
@@ -411,16 +411,16 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
                 // a color flip. This pushes black nodes further down the tree. We
                 // want black nodes as far down as we can get so that we can insert
                 // our red node without complications.
-                q->color = RED;
-                q->link[0]->color = BLACK;
-                q->link[1]->color = BLACK;
+                q->color = RB_RED;
+                q->link[0]->color = RB_BLACK;
+                q->link[1]->color = RB_BLACK;
             }
 
             if (NAME_(_is_red)(q) && NAME_(_is_red)(p)) {
                 // If we've performed a color flip, we may now have a red violation
                 // in between our current node `q` and our parent node `p`. If this
                 // is the case, we must perform a rotation.
-                rbdir_t g_dir = t->link[1] == g;
+                rb_dir_t g_dir = t->link[1] == g;
 
                 if (q == p->link[last]) {
                     // If we've gone in the same direction twice, then we can
@@ -464,7 +464,7 @@ RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
         tree->root = head.link[1];
     }
 
-    tree->root->color = BLACK;
+    tree->root->color = RB_BLACK;
 
     return true;
 }
@@ -477,14 +477,14 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
 #endif
     if (tree->root != NULL) {
         // The tree isn't empty, so we have work to do.
-        RB_NODE head = { .color = BLACK };
+        RB_NODE head = { .color = RB_BLACK };
 
         RB_NODE* g; // The grandparent of the current node.
         RB_NODE* p; // The parent of the current node.
         RB_NODE* q; // The current node.
         RB_NODE* f = NULL; // The matching node, if found.
 
-        rbdir_t dir = RB_RIGHT;
+        rb_dir_t dir = RB_RIGHT;
 
         q = &head;
         g = p = NULL;
@@ -494,7 +494,7 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
         // invariants so that the node we eventually remove is a red one.
         while (q->link[dir] != NULL) {
             // While we have not hit the edge of the tree:
-            rbdir_t last = dir;
+            rb_dir_t last = dir;
 
             // Move our iterators down a notch.
             g = p, p = q;
@@ -526,11 +526,11 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
                             // black, and all children of children of p black.
                             // We can thus safely set all children of p to red
                             // and change p to black.
-                            p->color = BLACK;
-                            s->color = RED;
-                            q->color = RED;
+                            p->color = RB_BLACK;
+                            s->color = RB_RED;
+                            q->color = RB_RED;
                         } else {
-                            rbdir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
+                            rb_dir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
 
                             if (NAME_(_is_red)(s->link[last])) {
                                 g->link[g_dir] = NAME_(_double_rotate)(p, last);
@@ -538,9 +538,9 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
                                 g->link[g_dir] = NAME_(_single_rotate)(p, last);
                             }
 
-                            q->color = g->link[g_dir]->color = RED;
-                            g->link[g_dir]->link[0]->color = BLACK;
-                            g->link[g_dir]->link[1]->color = BLACK;
+                            q->color = g->link[g_dir]->color = RB_RED;
+                            g->link[g_dir]->link[0]->color = RB_BLACK;
+                            g->link[g_dir]->link[1]->color = RB_BLACK;
                         }
                     }
                 }
@@ -567,7 +567,7 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
         tree->root = head.link[1];
 
         if (tree->root != NULL) {
-            tree->root->color = BLACK;
+            tree->root->color = RB_BLACK;
         }
     }
 }
@@ -591,14 +591,14 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
 
     if (tree->root != NULL) {
         // The tree isn't empty, so we have work to do.
-        RB_NODE head = { .color = BLACK };
+        RB_NODE head = { .color = RB_BLACK };
 
         RB_NODE* g; // The grandparent of the current node.
         RB_NODE* p; // The parent of the current node.
         RB_NODE* q; // The current node.
         RB_NODE* f = NULL; // The matching node, if found.
 
-        rbdir_t dir = RB_RIGHT;
+        rb_dir_t dir = RB_RIGHT;
 
         q = &head;
         g = p = NULL;
@@ -608,7 +608,7 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
         // invariants so that the node we eventually remove is a red one.
         while (q->link[dir] != NULL) {
             // While we have not hit the edge of the tree:
-            rbdir_t last = dir;
+            rb_dir_t last = dir;
 
             // Move our iterators down a notch.
             g = p, p = q;
@@ -640,11 +640,11 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
                             // black, and all children of children of p black.
                             // We can thus safely set all children of p to red
                             // and change p to black.
-                            p->color = BLACK;
-                            s->color = RED;
-                            q->color = RED;
+                            p->color = RB_BLACK;
+                            s->color = RB_RED;
+                            q->color = RB_RED;
                         } else {
-                            rbdir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
+                            rb_dir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
 
                             if (NAME_(_is_red)(s->link[last])) {
                                 g->link[g_dir] = NAME_(_double_rotate)(p, last);
@@ -652,9 +652,9 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
                                 g->link[g_dir] = NAME_(_single_rotate)(p, last);
                             }
 
-                            q->color = g->link[g_dir]->color = RED;
-                            g->link[g_dir]->link[0]->color = BLACK;
-                            g->link[g_dir]->link[1]->color = BLACK;
+                            q->color = g->link[g_dir]->color = RB_RED;
+                            g->link[g_dir]->link[0]->color = RB_BLACK;
+                            g->link[g_dir]->link[1]->color = RB_BLACK;
                         }
                     }
                 }
@@ -686,7 +686,7 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
         tree->root = head.link[1];
 
         if (tree->root != NULL) {
-            tree->root->color = BLACK;
+            tree->root->color = RB_BLACK;
         }
     }
 
@@ -712,14 +712,14 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
 
     if (tree->root != NULL) {
         // The tree isn't empty, so we have work to do.
-        RB_NODE head = { .color = BLACK };
+        RB_NODE head = { .color = RB_BLACK };
 
         RB_NODE* g; // The grandparent of the current node.
         RB_NODE* p; // The parent of the current node.
         RB_NODE* q; // The current node.
         RB_NODE* f = NULL; // The matching node, if found.
 
-        rbdir_t dir = RB_RIGHT;
+        rb_dir_t dir = RB_RIGHT;
 
         q = &head;
         g = p = NULL;
@@ -729,7 +729,7 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
         // invariants so that the node we eventually remove is a red one.
         while (q->link[dir] != NULL) {
             // While we have not hit the edge of the tree:
-            rbdir_t last = dir;
+            rb_dir_t last = dir;
 
             // Move our iterators down a notch.
             g = p, p = q;
@@ -761,11 +761,11 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
                             // black, and all children of children of p black.
                             // We can thus safely set all children of p to red
                             // and change p to black.
-                            p->color = BLACK;
-                            s->color = RED;
-                            q->color = RED;
+                            p->color = RB_BLACK;
+                            s->color = RB_RED;
+                            q->color = RB_RED;
                         } else {
-                            rbdir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
+                            rb_dir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
 
                             if (NAME_(_is_red)(s->link[last])) {
                                 g->link[g_dir] = NAME_(_double_rotate)(p, last);
@@ -773,9 +773,9 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
                                 g->link[g_dir] = NAME_(_single_rotate)(p, last);
                             }
 
-                            q->color = g->link[g_dir]->color = RED;
-                            g->link[g_dir]->link[0]->color = BLACK;
-                            g->link[g_dir]->link[1]->color = BLACK;
+                            q->color = g->link[g_dir]->color = RB_RED;
+                            g->link[g_dir]->link[0]->color = RB_BLACK;
+                            g->link[g_dir]->link[1]->color = RB_BLACK;
                         }
                     }
                 }
@@ -807,7 +807,7 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
         tree->root = head.link[1];
 
         if (tree->root != NULL) {
-            tree->root->color = BLACK;
+            tree->root->color = RB_BLACK;
         }
     }
 
