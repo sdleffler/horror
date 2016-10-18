@@ -56,7 +56,7 @@ static MunitResult test(const MunitParameter params[], void* tree) {
     munit_assert_size(rb_int_size(tree), ==, 0);
 
     size_t i;
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 100; i++) {
         int x = munit_rand_int_range(0, 100);
 
         const int* preexisting = rb_int_find(tree, x);
@@ -85,6 +85,58 @@ static MunitResult test(const MunitParameter params[], void* tree) {
             munit_assert_int(*preexisting, ==, x);
             munit_assert_size(old_size + 1, ==, rb_int_size(tree));
         }
+    }
+
+    for (; i > 0; i--) {
+        int x = munit_rand_int_range(0, 100);
+
+        const int* preexisting = rb_int_find(tree, x);
+
+        bool already_there = false;
+        if (preexisting != NULL) {
+            already_there = true;
+
+            munit_assert_int(x, ==, *preexisting);
+        }
+
+        size_t old_size = rb_int_size(tree);
+
+        fprintf(stderr, "Removing %i...\n", x);
+        rb_int_remove(tree, x);
+
+        fprintf(stderr, "Asserting tree invariants...\n");
+        munit_assert(rb_int_assert(tree));
+
+        fprintf(stderr, "Asserting size change conditions...\n");
+        if (!already_there) {
+            munit_assert_size(old_size, ==, rb_int_size(tree));
+        } else {
+            preexisting = rb_int_find(tree, x);
+            munit_assert_null(preexisting);
+            munit_assert_size(old_size - 1, ==, rb_int_size(tree));
+        }
+    }
+
+    while (rb_int_size(tree) < 100) {
+        int x = munit_rand_int_range(0, 100);
+        rb_int_insert(tree, x);
+    }
+
+    while (rb_int_size(tree) > 0) {
+        int* min = rb_int_min(tree);
+        munit_assert_not_null(min);
+        munit_assert_int(*min, ==, rb_int_pop_min(tree));
+    }
+
+    while (rb_int_size(tree) < 100) {
+        int x = munit_rand_int_range(0, 100);
+        rb_int_insert(tree, x);
+    }
+
+    while (rb_int_size(tree) > 0) {
+        int* max = rb_int_max(tree);
+        munit_assert_not_null(max);
+        munit_assert_int(*max, ==, rb_int_pop_max(tree));
     }
 
     return MUNIT_OK;

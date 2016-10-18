@@ -24,6 +24,8 @@ SOFTWARE.
 
 */
 
+#include <assert.h>
+
 #include "munit.h"
 
 #include "horror/macro.h"
@@ -55,11 +57,13 @@ static void tear_down(void* tree) {
 static MunitResult test(const MunitParameter params[], void* tree) {
     munit_assert_size(rb_int_size(tree), ==, 0);
 
-    int ints[10];
-    munit_rand_memory(10 * sizeof(int), (uint8_t*)ints);
+    int ints[100];
+    for (size_t i = 0; i < 100; i++) {
+        ints[i] = munit_rand_int_range(0, 100);
+    }
 
     size_t i;
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 100; i++) {
         fprintf(stderr, "Generated: %i. Looking to see if it's already there...", ints[i]);
 
         const int* preexisting = rb_int_find(tree, &ints[i]);
@@ -88,6 +92,56 @@ static MunitResult test(const MunitParameter params[], void* tree) {
             munit_assert_int(*preexisting, ==, ints[i]);
             munit_assert_size(old_size + 1, ==, rb_int_size(tree));
         }
+    }
+
+    for (; i > 0; i--) {
+        int x = munit_rand_int_range(0, 100);
+
+        const int* preexisting = rb_int_find(tree, &x);
+
+        bool already_there = false;
+        if (preexisting != NULL) {
+            already_there = true;
+
+            munit_assert_int(x, ==, *preexisting);
+        }
+
+        size_t old_size = rb_int_size(tree);
+
+        fprintf(stderr, "Removing %i...\n", x);
+        rb_int_remove(tree, &x);
+
+        fprintf(stderr, "Asserting tree invariants...\n");
+        munit_assert(rb_int_assert(tree));
+
+        fprintf(stderr, "Asserting size change conditions...\n");
+        if (!already_there) {
+            munit_assert_size(old_size, ==, rb_int_size(tree));
+        } else {
+            preexisting = rb_int_find(tree, &x);
+            munit_assert_null(preexisting);
+            munit_assert_size(old_size - 1, ==, rb_int_size(tree));
+        }
+    }
+
+    for (size_t i = 0; i < 100; i++) {
+        rb_int_insert(tree, &ints[i]);
+    }
+
+    while (rb_int_size(tree) > 0) {
+        int min = *rb_int_min(tree);
+        int popped = *rb_int_pop_min(tree);
+        munit_assert_int(min, ==, popped);
+    }
+
+    for (size_t i = 0; i < 100; i++) {
+        rb_int_insert(tree, &ints[i]);
+    }
+
+    while (rb_int_size(tree) > 0) {
+        int max = *rb_int_max(tree);
+        int popped = *rb_int_pop_max(tree);
+        munit_assert_int(max, ==, popped);
     }
 
     return MUNIT_OK;

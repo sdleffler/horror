@@ -56,7 +56,7 @@ int main (int argc, char* argv[]) {
         "/horror-tests",
         tests,
         NULL,
-        1,
+        1024,
         MUNIT_SUITE_OPTION_NONE,
     };
 

@@ -142,7 +142,7 @@ RB_FUNC RB_ELEM_TYPE* NAME_(_next)(RB_TRAV* trav);
 RB_FUNC void NAME_(_init)(RB_TYPE* tree);
 RB_FUNC void NAME_(_cleanup)(RB_TYPE* tree);
 
-#if RB_STORAGE == HR_STORAGE_DIRECT
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
 RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE data);
 RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE elem);
 RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE elem);
@@ -155,6 +155,17 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* elem);
 RB_FUNC size_t NAME_(_size)(RB_TYPE* tree);
 RB_FUNC RB_ELEM_TYPE* NAME_(_min)(RB_TYPE* tree);
 RB_FUNC RB_ELEM_TYPE* NAME_(_max)(RB_TYPE* tree);
+
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
+RB_FUNC RB_ELEM_TYPE NAME_(_pop_min)(RB_TYPE* tree);
+RB_FUNC RB_ELEM_TYPE NAME_(_pop_max)(RB_TYPE* tree);
+#elif (RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
+RB_FUNC void NAME_(_pop_min)(RB_TYPE* tree, RB_ELEM_TYPE* dst);
+RB_FUNC void NAME_(_pop_max)(RB_TYPE* tree, RB_ELEM_TYPE* dst);
+#elif RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree);
+RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree);
+#endif
 
 #if defined(RB_DEBUG)
 RB_FUNC bool NAME_(_assert)(RB_TYPE* tree);
@@ -541,16 +552,16 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
             RB_FREE_ELEM(f->data);
 #endif
 
-#if RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
-            RB_MEMCPY_ELEM(f->data, q->data);
-#elif RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
+#if RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
             RB_MEMCPY_ELEM(&f->data, &q->data);
-#elif (RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+#else
             f->data = q->data;
 #endif
 
             p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
             RB_FREE_NODE(q);
+
+            tree->size -= 1;
         }
 
         tree->root = head.link[1];
@@ -558,10 +569,254 @@ RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* data) {
         if (tree->root != NULL) {
             tree->root->color = BLACK;
         }
-
-        tree->size -= 1;
     }
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
+RB_FUNC RB_ELEM_TYPE NAME_(_pop_min)(RB_TYPE* tree)
+#elif (RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
+RB_FUNC void NAME_(_pop_min)(RB_TYPE* tree, RB_ELEM_TYPE* dst)
+#elif RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+RB_FUNC RB_ELEM_TYPE* NAME_(_pop_min)(RB_TYPE* tree)
+#endif
+{
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
+    RB_ELEM_TYPE ret;
+#elif RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+    RB_ELEM_TYPE* ret = NULL;
+#endif
+
+    if (tree->root != NULL) {
+        // The tree isn't empty, so we have work to do.
+        RB_NODE head = { .color = BLACK };
+
+        RB_NODE* g; // The grandparent of the current node.
+        RB_NODE* p; // The parent of the current node.
+        RB_NODE* q; // The current node.
+        RB_NODE* f = NULL; // The matching node, if found.
+
+        rbdir_t dir = RB_RIGHT;
+
+        q = &head;
+        g = p = NULL;
+        q->link[1] = tree->root;
+
+        // While we search, we push a red node down the tree while maintaining
+        // invariants so that the node we eventually remove is a red one.
+        while (q->link[dir] != NULL) {
+            // While we have not hit the edge of the tree:
+            rbdir_t last = dir;
+
+            // Move our iterators down a notch.
+            g = p, p = q;
+            q = q->link[dir];
+            dir = RB_LEFT;
+
+            // If we found the node, save it for later. We have violations to
+            // fix.
+            if (q->link[dir] == NULL) {
+                f = q;
+            }
+
+            // If both the current node and the current node's child in the
+            // direction of search is black:
+            if (!NAME_(_is_red)(q) && !NAME_(_is_red)(q->link[dir])) {
+                // If the sibling of said child node is red, then we can fix it
+                // with a tree rotation.
+                if (NAME_(_is_red)(q->link[!dir])) {
+                    // We must update our parent iterator. This here works since
+                    // last tells us which child of p q is. Neat.
+                    p = p->link[last] = NAME_(_single_rotate)(q, dir);
+                } else if (!NAME_(_is_red)(q->link[!dir])) {
+                    // This is the sibling of our current node.
+                    RB_NODE* s = p->link[!last];
+
+                    if (s != NULL) {
+                        if (!NAME_(_is_red)(s->link[0]) && !NAME_(_is_red)(s->link[1])) {
+                            // We've got a tree with p as red, all children of p
+                            // black, and all children of children of p black.
+                            // We can thus safely set all children of p to red
+                            // and change p to black.
+                            p->color = BLACK;
+                            s->color = RED;
+                            q->color = RED;
+                        } else {
+                            rbdir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
+
+                            if (NAME_(_is_red)(s->link[last])) {
+                                g->link[g_dir] = NAME_(_double_rotate)(p, last);
+                            } else if (NAME_(_is_red)(s->link[!last])) {
+                                g->link[g_dir] = NAME_(_single_rotate)(p, last);
+                            }
+
+                            q->color = g->link[g_dir]->color = RED;
+                            g->link[g_dir]->link[0]->color = BLACK;
+                            g->link[g_dir]->link[1]->color = BLACK;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (f != NULL) {
+#if (RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+            ret = f->data;
+#elif RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
+            RB_MEMCPY_ELEM(dst, &f->data);
+#elif RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
+            RB_MEMCPY_ELEM(dst, f->data);
+            RB_FREE_ELEM(f->data);
+#endif
+
+#if RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
+            RB_MEMCPY_ELEM(&f->data, &q->data);
+#else
+            f->data = q->data;
+#endif
+
+            p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
+            RB_FREE_NODE(q);
+
+            tree->size -= 1;
+        }
+
+        tree->root = head.link[1];
+
+        if (tree->root != NULL) {
+            tree->root->color = BLACK;
+        }
+    }
+
+#if (RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+    return ret;
+#endif
+}
+
+
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
+RB_FUNC RB_ELEM_TYPE NAME_(_pop_max)(RB_TYPE* tree)
+#elif (RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
+RB_FUNC void NAME_(_pop_max)(RB_TYPE* tree, RB_ELEM_TYPE* dst)
+#elif RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+RB_FUNC RB_ELEM_TYPE* NAME_(_pop_max)(RB_TYPE* tree)
+#endif
+{
+#if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
+    RB_ELEM_TYPE ret;
+#elif RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+    RB_ELEM_TYPE* ret = NULL;
+#endif
+
+    if (tree->root != NULL) {
+        // The tree isn't empty, so we have work to do.
+        RB_NODE head = { .color = BLACK };
+
+        RB_NODE* g; // The grandparent of the current node.
+        RB_NODE* p; // The parent of the current node.
+        RB_NODE* q; // The current node.
+        RB_NODE* f = NULL; // The matching node, if found.
+
+        rbdir_t dir = RB_RIGHT;
+
+        q = &head;
+        g = p = NULL;
+        q->link[1] = tree->root;
+
+        // While we search, we push a red node down the tree while maintaining
+        // invariants so that the node we eventually remove is a red one.
+        while (q->link[dir] != NULL) {
+            // While we have not hit the edge of the tree:
+            rbdir_t last = dir;
+
+            // Move our iterators down a notch.
+            g = p, p = q;
+            q = q->link[dir];
+            dir = RB_RIGHT;
+
+            // If we found the node, save it for later. We have violations to
+            // fix.
+            if (q->link[dir] == NULL) {
+                f = q;
+            }
+
+            // If both the current node and the current node's child in the
+            // direction of search is black:
+            if (!NAME_(_is_red)(q) && !NAME_(_is_red)(q->link[dir])) {
+                // If the sibling of said child node is red, then we can fix it
+                // with a tree rotation.
+                if (NAME_(_is_red)(q->link[!dir])) {
+                    // We must update our parent iterator. This here works since
+                    // last tells us which child of p q is. Neat.
+                    p = p->link[last] = NAME_(_single_rotate)(q, dir);
+                } else if (!NAME_(_is_red)(q->link[!dir])) {
+                    // This is the sibling of our current node.
+                    RB_NODE* s = p->link[!last];
+
+                    if (s != NULL) {
+                        if (!NAME_(_is_red)(s->link[0]) && !NAME_(_is_red)(s->link[1])) {
+                            // We've got a tree with p as red, all children of p
+                            // black, and all children of children of p black.
+                            // We can thus safely set all children of p to red
+                            // and change p to black.
+                            p->color = BLACK;
+                            s->color = RED;
+                            q->color = RED;
+                        } else {
+                            rbdir_t g_dir = g->link[1] == p ? RB_RIGHT : RB_LEFT;
+
+                            if (NAME_(_is_red)(s->link[last])) {
+                                g->link[g_dir] = NAME_(_double_rotate)(p, last);
+                            } else if (NAME_(_is_red)(s->link[!last])) {
+                                g->link[g_dir] = NAME_(_single_rotate)(p, last);
+                            }
+
+                            q->color = g->link[g_dir]->color = RED;
+                            g->link[g_dir]->link[0]->color = BLACK;
+                            g->link[g_dir]->link[1]->color = BLACK;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (f != NULL) {
+#if (RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+            ret = f->data;
+#elif RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
+            RB_MEMCPY_ELEM(dst, &f->data);
+#elif RB_STORAGE == HR_STORAGE_OWNED_INDIRECT
+            RB_MEMCPY_ELEM(dst, f->data);
+            RB_FREE_ELEM(f->data);
+#endif
+
+#if RB_STORAGE == HR_STORAGE_DIRECT && defined(RB_MEMCPY_ELEM)
+            RB_MEMCPY_ELEM(&f->data, &q->data);
+#else
+            f->data = q->data;
+#endif
+
+            p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
+            RB_FREE_NODE(q);
+
+            tree->size -= 1;
+        }
+
+        tree->root = head.link[1];
+
+        if (tree->root != NULL) {
+            tree->root->color = BLACK;
+        }
+    }
+
+#if (RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)) || RB_STORAGE == HR_STORAGE_BORROWED_INDIRECT
+    return ret;
+#endif
+}
+
+#pragma GCC diagnostic pop
 
 
 RB_FUNC size_t NAME_(_size)(RB_TYPE* tree) {
