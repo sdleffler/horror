@@ -147,11 +147,11 @@ RB_FUNC void NAME_(_init)(RB_TYPE* tree);
 RB_FUNC void NAME_(_cleanup)(RB_TYPE* tree);
 
 #if RB_STORAGE == HR_STORAGE_DIRECT && !defined(RB_MEMCPY_ELEM)
-RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE data);
+RB_FUNC RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE data);
 RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE elem);
 RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE elem);
 #else
-RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE* data);
+RB_FUNC RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE* data);
 RB_FUNC bool NAME_(_insert)(RB_TYPE* tree, const RB_ELEM_TYPE* elem);
 RB_FUNC void NAME_(_remove)(RB_TYPE* tree, const RB_ELEM_TYPE* elem);
 #endif
@@ -296,11 +296,11 @@ RB_FUNC bool NAME_(_is_red)(RB_NODE* node) {
 
 
 #if RB_STORAGE == HR_STORAGE_DIRECT
-RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE data) {
+RB_FUNC RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE data) {
 #else
-RB_FUNC const RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE* data) {
+RB_FUNC RB_ELEM_TYPE* NAME_(_find)(const RB_TYPE* tree, const RB_ELEM_TYPE* data) {
 #endif
-    const RB_NODE* q = tree->root;
+    RB_NODE* q = tree->root;
 
     rb_dir_t dir;
     while (q != NULL && RB_CMP((q->data), data) != 0) {
