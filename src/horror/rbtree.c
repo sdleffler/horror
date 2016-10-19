@@ -40,12 +40,12 @@ Walker's magnificent tutorials and red black tree library.
 
 #if !defined(RB_ELEM_TYPE)
     #error Error: Generic red-black tree requires RB_ELEM_TYPE to be defined.
-    #define RB_ELEM_TYPE char // For purposes of testing.
+    #define RB_ERROR
 #endif
 
 #if !defined(RB_NAME)
     #error Error: Generic red-black tree requires RB_NAME to be defined.
-    #define RB_NAME rb_char // For purposes of testing.
+    #define RB_ERROR
 #endif
 
 #if !defined(RB_CMP)
@@ -59,7 +59,7 @@ an integer greater than zero. It is okay to define RB_CMP as a macro which \
 uses its arguments multiple times; it will never be called with effectful \
 arguments. Thus, one acceptable definition of RB_CMP might be \
 `#define RB_CMP(x, y) (x) < (y) ? -1 : ((x) > (y) ? 1 : 0)`.
-    #define RB_CMP(x, y) (x) < (y) ? -1 : ((x) > (y) ? 1 : 0) // For purposes of testing.
+    #define RB_ERROR
 #endif
 
 #if RB_STORAGE == HR_STORAGE_OWNED_INDIRECT && (!defined(RB_MALLOC_ELEM) || !defined(RB_FREE_ELEM))
@@ -67,17 +67,17 @@ arguments. Thus, one acceptable definition of RB_CMP might be \
         #error Error: Generic red-black tree is given a custom RB_MALLOC_ELEM, but \
 not a custom RB_FREE_ELEM! This is dangerous, potentially even more dangerous than \
 deciding to use this library in the first place. Please define a custom RB_FREE_ELEM.
-    #endif
-
-    #if defined(RB_FREE_ELEM)
+        #define RB_ERROR
+    #elif defined(RB_FREE_ELEM)
         #error Error: Generic red-black tree is given a custom RB_FREE_ELEM, but \
 not a custom RB_MALLOC_ELEM! This is dangerous, potentially even more dangerous \
 than deciding to use this library in the first place. Please define a custom \
 RB_MALLOC_ELEM.
+        #define RB_ERROR
+    #else
+        #define RB_MALLOC_ELEM (malloc(sizeof(RB_ELEM_TYPE)))
+        #define RB_FREE_ELEM(ptr) (free(ptr))
     #endif
-
-    #define RB_MALLOC_ELEM (malloc(sizeof(RB_ELEM_TYPE)))
-    #define RB_FREE_ELEM(ptr) (free(ptr))
 #endif
 
 #if RB_STORAGE == HR_STORAGE_OWNED_INDIRECT && !defined(RB_MEMCPY_ELEM)
@@ -89,17 +89,17 @@ RB_MALLOC_ELEM.
         #error Error: Generic red-black tree is given a custom RB_MALLOC_NODE, but \
 not a custom RB_FREE_NODE! This is dangerous, potentially even more dangerous than \
 deciding to use this library in the first place. Please define a custom RB_FREE_NODE.
-    #endif
-
-    #if defined(RB_FREE_NODE)
+        #define RB_ERROR
+    #elif defined(RB_FREE_NODE)
         #error Error: Generic red-black tree is given a custom RB_FREE_NODE, but \
 not a custom RB_MALLOC_NODE! This is dangerous, potentially even more dangerous \
 than deciding to use this library in the first place. Please define a custom \
 RB_MALLOC_NODE.
+        #define RB_ERROR
+    #else
+        #define RB_MALLOC_NODE (malloc(sizeof(RB_NODE)))
+        #define RB_FREE_NODE(ptr) (free(ptr))
     #endif
-
-    #define RB_MALLOC_NODE (malloc(sizeof(RB_NODE)))
-    #define RB_FREE_NODE(ptr) (free(ptr))
 #endif
 
 #if !defined(RB_TRAV_NAME)
@@ -116,12 +116,12 @@ RB_MALLOC_NODE.
     #define RB_FUNC extern inline
 #else
     #error Error: Generic red-black tree requires RB_SCOPE to be defined.
-    #define RB_FUNC // For testing purposes.
+    #define RB_ERROR
 #endif
 
 #if !defined(RB_STORAGE)
     #error Error: Generic red-black tree requires RB_STORAGE to be defined.
-    #define RB_STORAGE HR_STORAGE_DIRECT // For testing purposes.
+    #define RB_ERROR
 #endif
 
 #define NAME_(n) HR_CONCAT(RB_NAME, n)
@@ -133,7 +133,11 @@ RB_MALLOC_NODE.
 #define RB_TRAV_DEPTH_MAX 64
 #endif
 
-typedef struct NAME_(_t) NAME_(_t);
+#if !defined(RB_ERROR)
+
+#if !defined(RB_HEADER_EXISTS)
+
+typedef struct RB_TYPE RB_TYPE;
 typedef struct RB_TRAV RB_TRAV;
 
 RB_FUNC void NAME_(_trav_init)(RB_TRAV* trav, RB_TYPE* tree, rb_dir_t dec);
@@ -174,6 +178,8 @@ RB_FUNC void NAME_(_dump)(RB_TYPE* tree);
 #endif
 #endif
 
+#endif
+
 #if RB_SCOPE != HR_SCOPE_HEADER && RB_SCOPE != HR_SCOPE_EXTERN_INLINE
 
 
@@ -188,7 +194,7 @@ typedef struct RB_NODE {
 } RB_NODE;
 
 
-struct NAME_(_t) {
+struct RB_TYPE {
     size_t size;
     RB_NODE* root;
 };
@@ -955,6 +961,8 @@ RB_FUNC void NAME_(_dump)(RB_TYPE* tree) {
 
 #endif
 
+#endif
+
 #undef RB_ELEM_TYPE
 #undef RB_NAME
 #undef RB_CMP
@@ -973,3 +981,5 @@ RB_FUNC void NAME_(_dump)(RB_TYPE* tree) {
 #undef RB_TRAV_DEPTH_MAX
 #undef RB_DEBUG
 #undef RB_DEBUG_DUMP
+#undef RB_ERROR
+#undef RB_HEADER_EXISTS
